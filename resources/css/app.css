@@ -8,4 +8,17 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-display: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+    font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+.form-input {
+    @apply block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-700 focus:ring-4 focus:ring-blue-100;
+}
+
+.field-error {
+    @apply mt-2 text-sm font-medium text-red-700;
 }
