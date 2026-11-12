@@ -25,16 +25,20 @@
 
         <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             @foreach ([
-                ['Mis publicaciones', 'Administra los productos o servicios que compartes con el campus.', 'Próximamente'],
-                ['Mis favoritos', 'Encuentra en un solo lugar las publicaciones que guardaste.', 'Próximamente'],
-                ['Mi perfil', 'Consulta y actualiza la información de tu cuenta.', 'Próximamente'],
-                ['Marketplace', 'Muy pronto podrás descubrir las publicaciones de tu comunidad.', 'En preparación'],
-            ] as [$title, $description, $status])
+                ['Mis publicaciones', 'Administra los productos o servicios que compartes con el campus.', 'Ir a mis publicaciones', route('my-listings')],
+                ['Mis favoritos', 'Encuentra en un solo lugar las publicaciones que guardaste.', 'Próximamente', null],
+                ['Mi perfil', 'Consulta y actualiza la información de tu cuenta.', 'Próximamente', null],
+                ['Marketplace', 'Descubre las publicaciones de tu comunidad universitaria.', 'Explorar publicaciones', route('marketplace.index')],
+            ] as [$title, $description, $action, $url])
                 <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <div class="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-lg font-bold text-blue-800" aria-hidden="true">+</div>
                     <h3 class="mt-5 font-display text-lg font-bold text-blue-950">{{ $title }}</h3>
                     <p class="mt-2 min-h-12 text-sm leading-6 text-slate-500">{{ $description }}</p>
-                    <span class="mt-5 inline-flex rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600">{{ $status }}</span>
+                    @if ($url)
+                        <a href="{{ $url }}" class="mt-5 inline-flex rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-800 transition hover:bg-blue-100">{{ $action }}</a>
+                    @else
+                        <span class="mt-5 inline-flex rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600">{{ $action }}</span>
+                    @endif
                 </article>
             @endforeach
         </div>

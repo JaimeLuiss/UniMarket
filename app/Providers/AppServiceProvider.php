@@ -2,8 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Listing;
+use App\Policies\ListingPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -23,6 +26,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::policy(Listing::class, ListingPolicy::class);
+
         RateLimiter::for('login', function (Request $request) {
             $input = $request->input('email');
             $email = is_string($input) ? Str::lower($input) : '';

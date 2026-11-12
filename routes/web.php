@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Marketplace\ListingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -38,6 +39,19 @@ Route::middleware('auth')->group(function () {
         ->name('verification.send');
 
     Route::get('/dashboard', DashboardController::class)->middleware('verified')->name('dashboard');
+});
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/marketplace', [ListingController::class, 'index'])->name('marketplace.index');
+    Route::get('/marketplace/create', [ListingController::class, 'create'])->name('marketplace.create');
+    Route::post('/marketplace', [ListingController::class, 'store'])->name('marketplace.store');
+    Route::get('/marketplace/{listing}/edit', [ListingController::class, 'edit'])->name('marketplace.edit');
+    Route::put('/marketplace/{listing}', [ListingController::class, 'update'])->name('marketplace.update');
+    Route::delete('/marketplace/{listing}', [ListingController::class, 'destroy'])->name('marketplace.destroy');
+    Route::patch('/marketplace/{listing}/availability', [ListingController::class, 'updateAvailability'])->name('marketplace.availability');
+    Route::delete('/marketplace/{listing}/images/{image}', [ListingController::class, 'destroyImage'])->whereNumber('image')->name('marketplace.images.destroy');
+    Route::get('/marketplace/{listing}', [ListingController::class, 'show'])->name('marketplace.show');
+    Route::get('/my-listings', [ListingController::class, 'mine'])->name('my-listings');
 });
 
 Route::get('/admin', AdminDashboardController::class)

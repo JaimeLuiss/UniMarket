@@ -20,7 +20,10 @@
             <div class="flex items-center gap-3 text-sm font-semibold">
                 @auth
                     @if (auth()->user()->hasVerifiedEmail())
+                        <a href="{{ route('marketplace.index') }}" class="hidden text-slate-600 transition hover:text-blue-800 sm:inline">Marketplace</a>
+                        <a href="{{ route('my-listings') }}" class="hidden text-slate-600 transition hover:text-blue-800 sm:inline">Mis publicaciones</a>
                         <a href="{{ route('dashboard') }}" class="hidden text-slate-600 transition hover:text-blue-800 sm:inline">Mi espacio</a>
+                        <a href="{{ route('marketplace.create') }}" class="rounded-lg bg-blue-800 px-4 py-2 text-white transition hover:bg-blue-900">Publicar</a>
                     @else
                         <a href="{{ route('verification.notice') }}" class="hidden text-slate-600 transition hover:text-blue-800 sm:inline">Verificar correo</a>
                     @endif
