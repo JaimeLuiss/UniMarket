@@ -7,10 +7,11 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\Marketplace\ListingController;
-use App\Http\Controllers\Marketplace\FavoriteController;
+use App\Http\Controllers\Marketplace\ConversationController;
 use App\Http\Controllers\Marketplace\EntrepreneurFollowController;
 use App\Http\Controllers\Marketplace\EntrepreneurProfileController;
+use App\Http\Controllers\Marketplace\FavoriteController;
+use App\Http\Controllers\Marketplace\ListingController;
 use App\Http\Controllers\Marketplace\NotificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -65,6 +66,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+
+    Route::get('/conversations', [ConversationController::class, 'index'])->name('conversations.index');
+    Route::post('/marketplace/{listing}/conversations', [ConversationController::class, 'start'])->name('conversations.start');
+    Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
+    Route::get('/conversations/{conversation}/messages', [ConversationController::class, 'messages'])->name('conversations.messages');
+    Route::post('/conversations/{conversation}/messages', [ConversationController::class, 'send'])
+        ->middleware('throttle:messages')
+        ->name('conversations.send');
 
     Route::get('/marketplace', [ListingController::class, 'index'])->name('marketplace.index');
     Route::get('/marketplace/create', [ListingController::class, 'create'])->name('marketplace.create');

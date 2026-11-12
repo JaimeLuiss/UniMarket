@@ -110,6 +110,15 @@
                 @endif
             </section>
 
+            @if ($existingConversation)
+                <a href="{{ route('conversations.show', $existingConversation) }}" class="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-blue-800 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-900 sm:w-auto">Abrir conversación</a>
+            @elseif (auth()->id() !== $listing->user_id && $listing->isAvailable())
+                <form method="POST" action="{{ route('conversations.start', $listing) }}" class="mt-5">
+                    @csrf
+                    <button type="submit" class="inline-flex w-full items-center justify-center rounded-xl bg-blue-800 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-900 sm:w-auto">Contactar vendedor</button>
+                </form>
+            @endif
+
             @can('update', $listing)
                 <a href="{{ route('marketplace.edit', $listing) }}" class="mt-5 inline-flex rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 hover:border-blue-200 hover:text-blue-800">Editar publicación</a>
             @endcan

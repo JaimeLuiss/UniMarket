@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Marketplace;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Conversation;
 use App\Models\EntrepreneurProfile;
 use App\Models\Listing;
 use App\Models\User;
@@ -66,7 +67,7 @@ class ListingController extends Controller
         ]);
     }
 
-    public function show(Listing $listing): View
+    public function show(Request $request, Listing $listing): View
     {
         abort_unless($this->publicListings()->whereKey($listing->id)->exists(), 404);
 
@@ -84,6 +85,14 @@ class ListingController extends Controller
             );
         }
 
+        $existingConversation = null;
+        if ($request->user()->id !== $listing->user_id) {
+            $existingConversation = $request->user()->conversationsAsBuyer()
+                ->where('listing_id', $listing->id)
+                ->where('seller_id', $listing->user_id)
+                ->first();
+        }
+
         $otherListings = $this->publicListings()
             ->where('user_id', $listing->user_id)
             ->whereKeyNot($listing->id)
@@ -96,7 +105,7 @@ class ListingController extends Controller
             ->limit(4)
             ->get();
 
-        return view('marketplace.show', compact('listing', 'otherListings'));
+        return view('marketplace.show', compact('listing', 'otherListings', 'existingConversation'));
     }
 
     public function create(): View

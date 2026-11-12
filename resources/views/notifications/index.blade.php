@@ -35,13 +35,17 @@
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div>
                             <p class="font-bold text-blue-950">
-                                @if (($data['type'] ?? '') === \App\Notifications\EntrepreneurUpdateNotification::TYPE_NEW_LISTING)
+                                    @if (($data['type'] ?? '') === 'new_message')
+                                        Nuevo mensaje de {{ $data['sender_name'] ?? 'un estudiante' }}
+                                    @elseif (($data['type'] ?? '') === \App\Notifications\EntrepreneurUpdateNotification::TYPE_NEW_LISTING)
                                     {{ $data['entrepreneur_name'] }} publicó un producto nuevo
                                 @else
                                     {{ $data['entrepreneur_name'] }} volvió a tener productos disponibles
                                 @endif
                             </p>
-                            @if (! empty($data['listing_title']))
+                                @if (($data['type'] ?? '') === 'new_message')
+                                    <p class="mt-1 text-sm text-slate-600">{{ $data['preview'] ?? '' }}</p>
+                                @elseif (! empty($data['listing_title']))
                                 <p class="mt-1 text-sm text-slate-600">{{ $data['listing_title'] }}</p>
                             @endif
                             <p class="mt-2 text-xs text-slate-500">{{ $notification->created_at->format('d/m/Y H:i') }}</p>
@@ -55,7 +59,9 @@
                         @endif
                     </div>
                     <div class="mt-4 flex flex-wrap gap-4 text-sm font-bold">
-                        @if (! empty($data['listing_id']))
+                        @if (($data['type'] ?? '') === 'new_message' && ! empty($data['conversation_id']))
+                            <a href="{{ route('conversations.show', $data['conversation_id']) }}" class="text-blue-800 hover:text-blue-950">Abrir conversación →</a>
+                        @elseif (! empty($data['listing_id']))
                             <a href="{{ route('marketplace.show', $data['listing_id']) }}" class="text-blue-800 hover:text-blue-950">Ver publicación →</a>
                         @endif
                         @if (! empty($data['entrepreneur_slug']))

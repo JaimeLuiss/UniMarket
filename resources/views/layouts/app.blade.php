@@ -43,6 +43,21 @@
                         <a href="{{ route('my-favorites') }}" class="text-slate-600 transition hover:text-blue-800">Mis favoritos</a>
                         <a href="{{ route('my-entrepreneur') }}" class="text-slate-600 transition hover:text-blue-800">Mi emprendimiento</a>
                         <a href="{{ route('entrepreneurs.following') }}" class="text-slate-600 transition hover:text-blue-800">Emprendimientos seguidos</a>
+                        @php
+                            $unreadMessageCount = \App\Models\Message::query()
+                                ->whereNull('read_at')
+                                ->where('sender_id', '!=', auth()->id())
+                                ->whereHas('conversation', fn ($query) => $query
+                                    ->where('buyer_id', auth()->id())
+                                    ->orWhere('seller_id', auth()->id()))
+                                ->count();
+                        @endphp
+                        <a href="{{ route('conversations.index') }}" class="inline-flex items-center gap-1 text-slate-600 transition hover:text-blue-800">
+                            Mensajes
+                            @if ($unreadMessageCount > 0)
+                                <span class="rounded-full bg-blue-800 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $unreadMessageCount }}</span>
+                            @endif
+                        </a>
                         <a href="{{ route('notifications.index') }}" class="inline-flex items-center gap-1 text-slate-600 transition hover:text-blue-800">
                             Notificaciones
                             @if (($unreadCount = auth()->user()->unreadNotifications()->count()) > 0)

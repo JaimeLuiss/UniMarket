@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\Conversation;
 use App\Models\Listing;
+use App\Policies\ConversationPolicy;
 use App\Policies\ListingPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -27,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(Listing::class, ListingPolicy::class);
+        Gate::policy(Conversation::class, ConversationPolicy::class);
 
         RateLimiter::for('login', function (Request $request) {
             $input = $request->input('email');
@@ -34,5 +37,8 @@ class AppServiceProvider extends ServiceProvider
 
             return Limit::perMinute(5)->by(Str::transliterate($email.'|'.$request->ip()));
         });
+
+        RateLimiter::for('messages', fn (Request $request) => Limit::perMinute(20)
+            ->by((string) ($request->user()?->id ?? $request->ip())));
     }
 }

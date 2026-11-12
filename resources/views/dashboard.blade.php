@@ -23,10 +23,11 @@
             <span class="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold capitalize text-blue-800">{{ auth()->user()->role }}</span>
         </div>
 
-        <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
             @foreach ([
                 ['Mis publicaciones', 'Administra los productos o servicios que compartes con el campus.', 'Ir a mis publicaciones', route('my-listings')],
-                ['Mis favoritos', 'Encuentra en un solo lugar las publicaciones que guardaste.', 'Próximamente', null],
+                ['Mis favoritos', 'Encuentra en un solo lugar las publicaciones que guardaste.', 'Ver favoritos', route('my-favorites')],
+                ['Mensajes', 'Coordina entregas y responde a compradores o vendedores.', 'Abrir mensajes', route('conversations.index')],
                 ['Mi perfil', 'Consulta y actualiza la información de tu cuenta.', 'Próximamente', null],
                 ['Marketplace', 'Descubre las publicaciones de tu comunidad universitaria.', 'Explorar publicaciones', route('marketplace.index')],
             ] as [$title, $description, $action, $url])
