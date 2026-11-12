@@ -1,58 +1,91 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# UniMarket
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+UniMarket es un marketplace universitario donde estudiantes pueden publicar y descubrir productos, gestionar sus emprendimientos y comunicarse de forma privada dentro de la plataforma.
 
-## About Laravel
+## Tecnologías
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Laravel 13
+- PHP 8.3 o superior (desarrollo validado con PHP 8.5)
+- Eloquent ORM y Blade
+- Tailwind CSS 4 y Vite
+- SQLite o el motor de base de datos configurado en Laravel
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Funcionalidades
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- Registro, inicio de sesión, verificación de correo y roles de estudiante y administrador.
+- Catálogo de publicaciones con categorías, gestión de disponibilidad y publicaciones propias.
+- Favoritos de publicaciones y listado personal de favoritos.
+- Perfil de emprendimiento, asociación opcional con publicaciones y página pública para perfiles activos.
+- Seguimiento de emprendimientos.
+- Notificaciones internas por nuevas publicaciones y cambios de disponibilidad.
+- Mensajería comprador-vendedor con bandeja, chat, estado de lectura y notificación de mensajes.
 
-## Learning Laravel
+## Requisitos
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- PHP 8.3 o superior y Composer.
+- Node.js y npm.
+- SQLite o un motor compatible configurado en el archivo `.env`.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Instalación local
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Desde la carpeta del proyecto:
 
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```powershell
+composer install
+Copy-Item .env.example .env
+php artisan key:generate
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Configura la conexión a la base de datos en `.env`. Para una base de datos nueva de desarrollo, aplica el esquema y carga las categorías:
 
-## Contributing
+```powershell
+php artisan migrate --seed
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Instala y compila los recursos del frontend, e inicia el servidor:
 
-## Code of Conduct
+```powershell
+npm install
+npm run build
+php artisan serve
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Abre `http://127.0.0.1:8000`, regístrate en `/register` y verifica el correo para acceder a las funciones de estudiante. Para recibir el enlace de verificación durante el desarrollo local, configura `MAIL_MAILER=log` en `.env` y revisa `storage/logs/laravel.log`.
 
-## Security Vulnerabilities
+### Base existente sin categorías
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Si la base ya tiene sus migraciones aplicadas, no es necesario volver a migrar. El seeder de categorías es idempotente y se puede ejecutar así:
 
-## License
+```powershell
+php artisan db:seed --class=CategorySeeder
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Rutas principales
+
+Las funciones de estudiante requieren una sesión iniciada y correo verificado.
+
+| Ruta | Descripción |
+| --- | --- |
+| `/marketplace` | Explorar publicaciones |
+| `/my-listings` | Gestionar mis publicaciones |
+| `/my-favorites` | Consultar mis publicaciones favoritas |
+| `/my-entrepreneur` | Crear o gestionar mi emprendimiento |
+| `/entrepreneurs-following` | Ver emprendimientos que sigo |
+| `/notifications` | Consultar y marcar notificaciones |
+| `/conversations` | Abrir la bandeja de mensajes |
+
+Para iniciar una conversación, abre una publicación y selecciona la opción para contactar al vendedor. Solo el comprador y el vendedor participantes pueden consultar ese chat.
+
+## Pruebas
+
+Ejecuta la suite automatizada con:
+
+```powershell
+php artisan test
+```
+
+## Seguridad y configuración
+
+- No incluyas `.env`, credenciales ni la base de datos local en commits.
+- No compartas cuentas de demostración en este README.
+- Configura correo, base de datos y claves de aplicación mediante variables de entorno; UniMarket no depende de servicios externos de mensajería push.
