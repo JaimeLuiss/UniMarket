@@ -4,13 +4,13 @@ namespace App\Http\Controllers\Marketplace;
 
 use App\Http\Controllers\Controller;
 use App\Models\EntrepreneurProfile;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Throwable;
 
@@ -147,7 +147,7 @@ class EntrepreneurProfileController extends Controller
         );
     }
 
-    public function publicShow(string $slug): View
+    public function publicShow(Request $request, string $slug): View
     {
         $profile = EntrepreneurProfile::query()
             ->where('slug', $slug)
@@ -166,7 +166,10 @@ class EntrepreneurProfileController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        $isFollowing = auth()->user()->favoriteEntrepreneurs()->whereKey($profile->id)->exists();
+        $user = $request->user();
+        abort_unless($user instanceof User, 403);
+
+        $isFollowing = $user->favoriteEntrepreneurs()->whereKey($profile->id)->exists();
 
         return view('entrepreneurs.show', compact('profile', 'listings', 'isFollowing'));
     }
