@@ -7,12 +7,17 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Admin\AdminCategoryController;
+use App\Http\Controllers\Admin\AdminListingController;
+use App\Http\Controllers\Admin\AdminReportController;
+use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Marketplace\ConversationController;
 use App\Http\Controllers\Marketplace\EntrepreneurFollowController;
 use App\Http\Controllers\Marketplace\EntrepreneurProfileController;
 use App\Http\Controllers\Marketplace\FavoriteController;
 use App\Http\Controllers\Marketplace\ListingController;
 use App\Http\Controllers\Marketplace\NotificationController;
+use App\Http\Controllers\Marketplace\ReportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -83,10 +88,49 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/marketplace/{listing}', [ListingController::class, 'destroy'])->name('marketplace.destroy');
     Route::patch('/marketplace/{listing}/availability', [ListingController::class, 'updateAvailability'])->name('marketplace.availability');
     Route::delete('/marketplace/{listing}/images/{image}', [ListingController::class, 'destroyImage'])->whereNumber('image')->name('marketplace.images.destroy');
+    Route::post('/marketplace/{listing}/reports', [ReportController::class, 'store'])
+        ->middleware('throttle:reports')
+        ->name('marketplace.reports.store');
     Route::get('/marketplace/{listing}', [ListingController::class, 'show'])->name('marketplace.show');
     Route::get('/my-listings', [ListingController::class, 'mine'])->name('my-listings');
 });
 
-Route::get('/admin', AdminDashboardController::class)
-    ->middleware(['auth', 'verified', 'admin'])
-    ->name('admin.dashboard');
+Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function (): void {
+    Route::get('/', AdminDashboardController::class)->name('dashboard');
+
+    Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+    Route::get('/listings', [AdminListingController::class, 'index'])->name('listings.index');
+
+    Route::get('/categories', [AdminCategoryController::class, 'index'])->name('categories.index');
+    Route::get('/categories/create', [AdminCategoryController::class, 'create'])->name('categories.create');
+    Route::post('/categories', [AdminCategoryController::class, 'store'])->name('categories.store');
+    Route::get('/categories/{category}/edit', [AdminCategoryController::class, 'edit'])
+        ->whereNumber('category')
+        ->name('categories.edit');
+    Route::put('/categories/{category}', [AdminCategoryController::class, 'update'])
+        ->whereNumber('category')
+        ->name('categories.update');
+    Route::patch('/categories/{category}/status', [AdminCategoryController::class, 'updateStatus'])
+        ->whereNumber('category')
+        ->name('categories.status');
+    Route::delete('/categories/{category}', [AdminCategoryController::class, 'destroy'])
+        ->whereNumber('category')
+        ->name('categories.destroy');
+
+    Route::get('/reports', [AdminReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/{report}', [AdminReportController::class, 'show'])
+        ->whereNumber('report')
+        ->name('reports.show');
+    Route::patch('/reports/{report}/review', [AdminReportController::class, 'review'])
+        ->whereNumber('report')
+        ->name('reports.review');
+    Route::patch('/reports/{report}/resolve', [AdminReportController::class, 'resolve'])
+        ->whereNumber('report')
+        ->name('reports.resolve');
+    Route::patch('/reports/{report}/reject', [AdminReportController::class, 'reject'])
+        ->whereNumber('report')
+        ->name('reports.reject');
+    Route::patch('/reports/{report}/listing', [AdminReportController::class, 'updateListingModeration'])
+        ->whereNumber('report')
+        ->name('reports.listing-moderation');
+});

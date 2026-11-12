@@ -64,6 +64,9 @@
                                 <span class="rounded-full bg-blue-800 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $unreadCount }}</span>
                             @endif
                         </a>
+                        @if (auth()->user()->role === \App\Models\User::ROLE_ADMIN)
+                            <a href="{{ route('admin.dashboard') }}" class="font-bold text-blue-800 transition hover:text-blue-950">Administración</a>
+                        @endif
                         <a href="{{ route('dashboard') }}" class="text-slate-600 transition hover:text-blue-800">Mi espacio</a>
                     </div>
                 @endif

@@ -19,6 +19,9 @@ UniMarket es un marketplace universitario donde estudiantes pueden publicar y de
 - Seguimiento de emprendimientos.
 - Notificaciones internas por nuevas publicaciones y cambios de disponibilidad.
 - Mensajería comprador-vendedor con bandeja, chat, estado de lectura y notificación de mensajes.
+- Panel administrativo con indicadores, consulta de usuarios, publicaciones y gestión de categorías.
+- Reporte de publicaciones por estudiantes y revisión, resolución o rechazo desde administración.
+- Moderación administrativa de publicaciones, independiente de su estado comercial.
 
 ## Requisitos
 
@@ -41,6 +44,10 @@ Configura la conexión a la base de datos en `.env`. Para una base de datos nuev
 ```powershell
 php artisan migrate --seed
 ```
+
+Para SQLite, configura `DB_CONNECTION=sqlite` y, si aún no existe, crea el archivo local con `New-Item -ItemType File database/database.sqlite`. No subas ese archivo ni `.env` al repositorio.
+
+Las migraciones crean las tablas de la aplicación. El seeder `CategorySeeder` registra o actualiza las cuatro categorías iniciales sin duplicarlas. Para una base ya migrada que necesite categorías, ejecuta `php artisan db:seed --class=CategorySeeder`; no es necesario volver a migrar.
 
 Instala y compila los recursos del frontend, e inicia el servidor:
 
@@ -73,8 +80,21 @@ Las funciones de estudiante requieren una sesión iniciada y correo verificado.
 | `/entrepreneurs-following` | Ver emprendimientos que sigo |
 | `/notifications` | Consultar y marcar notificaciones |
 | `/conversations` | Abrir la bandeja de mensajes |
+| `/admin` | Dashboard administrativo; requiere cuenta administradora verificada |
 
 Para iniciar una conversación, abre una publicación y selecciona la opción para contactar al vendedor. Solo el comprador y el vendedor participantes pueden consultar ese chat.
+
+## Administración
+
+El panel requiere autenticación, correo verificado y rol `admin`. Desde allí se consultan indicadores, usuarios, publicaciones, categorías y reportes. Los administradores pueden revisar, resolver o rechazar reportes, y desactivar o reactivar la publicación denunciada sin alterar su estado comercial.
+
+Para promover una cuenta existente, primero regístrala y verifica su correo. Después ejecuta:
+
+```powershell
+php artisan unimarket correo@institucional.edu
+```
+
+El comando comprueba que la cuenta exista y esté verificada, solicita confirmación y no modifica la contraseña. No se debe compartir ni guardar en el repositorio la dirección personal de la cuenta administradora.
 
 ## Pruebas
 

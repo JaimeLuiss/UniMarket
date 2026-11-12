@@ -122,6 +122,34 @@
             @can('update', $listing)
                 <a href="{{ route('marketplace.edit', $listing) }}" class="mt-5 inline-flex rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 hover:border-blue-200 hover:text-blue-800">Editar publicación</a>
             @endcan
+
+            @auth
+                @if (auth()->id() !== $listing->user_id)
+                    <details class="mt-7 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                        <summary class="cursor-pointer font-bold text-amber-900">Reportar esta publicación</summary>
+                        <form method="POST" action="{{ route('marketplace.reports.store', $listing) }}" class="mt-4 space-y-4">
+                            @csrf
+                            <div>
+                                <label for="report_reason" class="mb-2 block text-sm font-semibold text-slate-700">Motivo</label>
+                                <select id="report_reason" name="reason" required class="w-full rounded-xl border-slate-300 text-sm focus:border-blue-700 focus:ring-blue-700">
+                                    <option value="">Selecciona un motivo</option>
+                                    @foreach (\App\Models\Report::REASON_LABELS as $value => $label)
+                                        <option value="{{ $value }}" @selected(old('reason') === $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label for="report_description" class="mb-2 block text-sm font-semibold text-slate-700">Describe el problema</label>
+                                <textarea id="report_description" name="description" rows="4" required minlength="10" maxlength="3000" class="w-full rounded-xl border-slate-300 text-sm focus:border-blue-700 focus:ring-blue-700" placeholder="Incluye los detalles necesarios para revisar el reporte.">{{ old('description') }}</textarea>
+                                @error('description') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                            </div>
+                            @error('report') <p class="text-sm text-red-700">{{ $message }}</p> @enderror
+                            @error('reason') <p class="text-sm text-red-700">{{ $message }}</p> @enderror
+                            <button type="submit" class="rounded-xl bg-amber-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-amber-800">Enviar reporte</button>
+                        </form>
+                    </details>
+                @endif
+            @endauth
         </div>
     </div>
 
