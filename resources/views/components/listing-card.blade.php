@@ -35,9 +35,25 @@
                 @endif
             </div>
             <div class="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-4 text-xs text-slate-500">
-                <span class="truncate">{{ $listing->user->name }}</span>
+                <span class="truncate">{{ $listing->entrepreneurProfile?->business_name ?? $listing->user->name }}</span>
                 <span class="truncate">{{ $listing->campus_location ?: 'Campus' }}</span>
             </div>
+            <p class="mt-2 text-xs text-slate-500">{{ $listing->favorited_by_count ?? 0 }} {{ ($listing->favorited_by_count ?? 0) === 1 ? 'favorito' : 'favoritos' }}</p>
         </div>
     </a>
+    @auth
+        @if (auth()->id() !== $listing->user_id && (($listing->is_favorited ?? false) || $listing->isAvailable()))
+            <div class="px-5 pb-5">
+                <form method="POST" action="{{ route(($listing->is_favorited ?? false) ? 'marketplace.unfavorite' : 'marketplace.favorite', $listing) }}">
+                    @csrf
+                    @if ($listing->is_favorited ?? false)
+                        @method('DELETE')
+                    @endif
+                    <button type="submit" class="w-full rounded-xl border border-blue-100 px-4 py-2 text-sm font-bold text-blue-800 transition hover:bg-blue-50">
+                        {{ ($listing->is_favorited ?? false) ? 'Quitar de favoritos' : 'Guardar en favoritos' }}
+                    </button>
+                </form>
+            </div>
+        @endif
+    @endauth
 </article>

@@ -90,6 +90,13 @@ class Listing extends Model
         return $this->belongsToMany(User::class, 'favorites')->withPivot('created_at');
     }
 
+    public function isAvailable(): bool
+    {
+        return $this->is_active
+            && $this->status === self::STATUS_AVAILABLE
+            && ($this->stock === null || $this->stock > 0);
+    }
+
     public function conversations(): HasMany
     {
         return $this->hasMany(Conversation::class);

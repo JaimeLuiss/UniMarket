@@ -18,6 +18,11 @@
     @if (session('status'))
         <div class="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800" role="status">{{ session('status') }}</div>
     @endif
+    @if ($errors->any())
+        <div class="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">
+            @foreach ($errors->all() as $error)<p>{{ $error }}</p>@endforeach
+        </div>
+    @endif
 
     <div class="mt-6 grid gap-9 lg:grid-cols-[1.15fr_0.85fr]">
         <div>
@@ -46,6 +51,23 @@
             @else
                 <p class="mt-6 text-xl font-extrabold text-blue-800">Disponible para intercambio</p>
             @endif
+
+            <div class="mt-5 flex flex-wrap items-center gap-3">
+                <span class="text-sm text-slate-500">{{ $listing->favorited_by_count }} {{ $listing->favorited_by_count === 1 ? 'favorito' : 'favoritos' }}</span>
+                @auth
+                    @if (auth()->id() !== $listing->user_id && (($listing->is_favorited ?? false) || $listing->isAvailable()))
+                        <form method="POST" action="{{ route(($listing->is_favorited ?? false) ? 'marketplace.unfavorite' : 'marketplace.favorite', $listing) }}">
+                            @csrf
+                            @if ($listing->is_favorited ?? false)
+                                @method('DELETE')
+                            @endif
+                            <button type="submit" class="rounded-xl border border-blue-100 px-4 py-2 text-sm font-bold text-blue-800 transition hover:bg-blue-50">
+                                {{ ($listing->is_favorited ?? false) ? 'Quitar de favoritos' : 'Guardar en favoritos' }}
+                            </button>
+                        </form>
+                    @endif
+                @endauth
+            </div>
 
             <div class="mt-8 border-y border-slate-200 py-6">
                 <h2 class="font-display text-lg font-bold text-blue-950">Descripción</h2>
@@ -79,7 +101,7 @@
                 <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Vendedor</p>
                 <h2 class="mt-2 font-display text-lg font-bold text-blue-950">{{ $listing->user->name }}</h2>
                 @if ($listing->entrepreneurProfile)
-                    <p class="mt-1 text-sm font-semibold text-blue-800">{{ $listing->entrepreneurProfile->business_name }}</p>
+                    <a href="{{ route('entrepreneurs.show', $listing->entrepreneurProfile->slug) }}" class="mt-1 inline-block text-sm font-semibold text-blue-800 hover:text-blue-950">{{ $listing->entrepreneurProfile->business_name }}</a>
                     @if ($listing->entrepreneurProfile->campus_location)
                         <p class="mt-2 text-sm text-slate-500">{{ $listing->entrepreneurProfile->campus_location }}</p>
                     @endif

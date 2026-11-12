@@ -47,6 +47,11 @@ class User extends Authenticatable implements MustVerifyEmail
             ->withPivot('created_at');
     }
 
+    public function followedEntrepreneurs(): BelongsToMany
+    {
+        return $this->favoriteEntrepreneurs();
+    }
+
     public function conversationsAsBuyer(): HasMany
     {
         return $this->hasMany(Conversation::class, 'buyer_id');

@@ -43,6 +43,20 @@
         </div>
 
         <div>
+            <label for="entrepreneur_profile_id" class="mb-2 block text-sm font-semibold text-slate-700">Emprendimiento <span class="font-normal text-slate-400">(opcional)</span></label>
+            <select id="entrepreneur_profile_id" name="entrepreneur_profile_id" class="{{ $inputClass }}">
+                <option value="">Publicación personal</option>
+                @foreach ($entrepreneurProfiles as $profile)
+                    <option value="{{ $profile->id }}" @selected((string) old('entrepreneur_profile_id', $listing?->entrepreneur_profile_id) === (string) $profile->id)>{{ $profile->business_name }}</option>
+                @endforeach
+            </select>
+            @if ($entrepreneurProfiles->isEmpty())
+                <p class="mt-2 text-xs text-slate-500">Crea y activa tu perfil de emprendimiento para asociarlo a tus publicaciones.</p>
+            @endif
+            @error('entrepreneur_profile_id') <p class="field-error">{{ $message }}</p> @enderror
+        </div>
+
+        <div>
             <label for="listing_type" class="mb-2 block text-sm font-semibold text-slate-700">Tipo de publicación</label>
             <select id="listing_type" name="listing_type" required class="{{ $inputClass }}">
                 <option value="{{ \App\Models\Listing::TYPE_SALE }}" @selected(old('listing_type', $listing?->listing_type ?? \App\Models\Listing::TYPE_SALE) === \App\Models\Listing::TYPE_SALE)>Venta</option>

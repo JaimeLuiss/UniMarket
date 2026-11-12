@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Marketplace;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\EntrepreneurProfile;
 use App\Models\Listing;
+use App\Models\User;
+use App\Notifications\EntrepreneurUpdateNotification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,7 +36,11 @@ class ListingController extends Controller
         ]);
 
         $query = $this->publicListings()
-            ->with(['user', 'category', 'images'])
+            ->with(['user', 'category', 'images', 'entrepreneurProfile'])
+            ->withCount('favoritedBy')
+            ->when($request->user(), fn (Builder $query) => $query->withExists([
+                'favoritedBy as is_favorited' => fn (Builder $favorites) => $favorites->whereKey($request->user()->id),
+            ]))
             ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
                 $query->where(function (Builder $query) use ($search): void {
                     $query->where('title', 'like', '%'.$search.'%')
@@ -69,11 +76,22 @@ class ListingController extends Controller
             'entrepreneurProfile',
             'images' => fn ($query) => $query->orderBy('sort_order'),
         ]);
+        $listing->loadCount('favoritedBy');
+        if ($requestUser = request()->user()) {
+            $listing->setAttribute(
+                'is_favorited',
+                $requestUser->favorites()->whereKey($listing->id)->exists()
+            );
+        }
 
         $otherListings = $this->publicListings()
             ->where('user_id', $listing->user_id)
             ->whereKeyNot($listing->id)
-            ->with(['user', 'category', 'images'])
+            ->with(['user', 'category', 'images', 'entrepreneurProfile'])
+            ->withCount('favoritedBy')
+            ->when(auth()->user(), fn (Builder $query) => $query->withExists([
+                'favoritedBy as is_favorited' => fn (Builder $favorites) => $favorites->whereKey(auth()->id()),
+            ]))
             ->latest('published_at')
             ->limit(4)
             ->get();
@@ -85,6 +103,7 @@ class ListingController extends Controller
     {
         return view('marketplace.create', [
             'categories' => Category::query()->where('is_active', true)->orderBy('sort_order')->get(),
+            'entrepreneurProfiles' => $this->ownActiveProfiles(),
         ]);
     }
 
@@ -100,6 +119,7 @@ class ListingController extends Controller
             $listing = DB::transaction(function () use ($validated, $request, $paths): Listing {
                 $listing = $request->user()->listings()->create([
                     'category_id' => $validated['category_id'],
+                        'entrepreneur_profile_id' => $validated['entrepreneur_profile_id'] ?? null,
                     'title' => $validated['title'],
                     'description' => $validated['description'],
                     'price' => $validated['listing_type'] === Listing::TYPE_SALE ? $validated['price'] : null,
@@ -131,6 +151,13 @@ class ListingController extends Controller
             throw $exception;
         }
 
+        if ($listing->entrepreneur_profile_id !== null) {
+            $this->notifyEntrepreneurFollowers(
+                $listing,
+                EntrepreneurUpdateNotification::TYPE_NEW_LISTING
+            );
+        }
+
         return redirect()->route('marketplace.show', $listing)->with('status', 'Tu publicación ya está en UniMarket.');
     }
 
@@ -141,6 +168,7 @@ class ListingController extends Controller
         return view('marketplace.edit', [
             'listing' => $listing->load('images'),
             'categories' => Category::query()->where('is_active', true)->orderBy('sort_order')->get(),
+            'entrepreneurProfiles' => $this->ownActiveProfiles(),
         ]);
     }
 
@@ -180,6 +208,7 @@ class ListingController extends Controller
 
                 $listing->update([
                     'category_id' => $validated['category_id'],
+                    'entrepreneur_profile_id' => $validated['entrepreneur_profile_id'] ?? null,
                     'title' => $validated['title'],
                     'description' => $validated['description'],
                     'price' => $validated['listing_type'] === Listing::TYPE_SALE ? $validated['price'] : null,
@@ -246,39 +275,59 @@ class ListingController extends Controller
     {
         Gate::authorize('update', $listing);
 
-        $allowedStatuses = $listing->availability_type === Listing::AVAILABILITY_DAILY
-            ? [Listing::STATUS_AVAILABLE, Listing::STATUS_SOLD_OUT_TODAY]
-            : [
-                Listing::STATUS_AVAILABLE,
-                Listing::STATUS_RESERVED,
-                Listing::STATUS_SOLD,
-                Listing::STATUS_EXCHANGED,
-            ];
-        $validated = $request->validate([
-            'status' => ['required', Rule::in($allowedStatuses)],
-            'stock' => [
-                Rule::prohibitedIf($listing->availability_type === Listing::AVAILABILITY_UNIQUE),
-                Rule::requiredIf($listing->availability_type === Listing::AVAILABILITY_DAILY && $listing->stock !== null),
-                'nullable',
-                'integer',
-                'min:0',
-            ],
-        ]);
+        $becameAvailable = DB::transaction(function () use ($request, $listing): bool {
+            $lockedListing = Listing::query()->lockForUpdate()->findOrFail($listing->id);
+            Gate::authorize('update', $lockedListing);
 
-        if ($listing->availability_type === Listing::AVAILABILITY_DAILY && $listing->stock !== null) {
-            $stock = (int) ($validated['stock'] ?? $listing->stock);
+            $isDaily = $lockedListing->availability_type === Listing::AVAILABILITY_DAILY;
+            $allowedStatuses = $isDaily
+                ? [Listing::STATUS_AVAILABLE, Listing::STATUS_SOLD_OUT_TODAY]
+                : [
+                    Listing::STATUS_AVAILABLE,
+                    Listing::STATUS_RESERVED,
+                    Listing::STATUS_SOLD,
+                    Listing::STATUS_EXCHANGED,
+                ];
+            $validated = $request->validate([
+                'status' => ['required', Rule::in($allowedStatuses)],
+                'stock' => [
+                    Rule::prohibitedIf(! $isDaily),
+                    Rule::requiredIf($isDaily && $lockedListing->stock !== null),
+                    'nullable',
+                    'integer',
+                    'min:0',
+                ],
+            ]);
 
-            if ($validated['status'] === Listing::STATUS_AVAILABLE && $stock === 0) {
-                throw ValidationException::withMessages([
-                    'stock' => 'No puedes marcar disponible una publicación con inventario en cero.',
-                ]);
+            if ($isDaily && $lockedListing->stock !== null) {
+                $stock = (int) ($validated['stock'] ?? $lockedListing->stock);
+
+                if ($validated['status'] === Listing::STATUS_AVAILABLE && $stock === 0) {
+                    throw ValidationException::withMessages([
+                        'stock' => 'No puedes marcar disponible una publicación con inventario en cero.',
+                    ]);
+                }
+
+                $lockedListing->stock = $stock;
             }
 
-            $listing->stock = $stock;
-        }
+            $previousStatus = $lockedListing->status;
+            $lockedListing->status = $validated['status'];
+            $lockedListing->save();
 
-        $listing->status = $validated['status'];
-        $listing->save();
+            return $isDaily
+                && $validated['status'] === Listing::STATUS_AVAILABLE
+                && $previousStatus === Listing::STATUS_SOLD_OUT_TODAY
+                && $lockedListing->is_active
+                && $lockedListing->entrepreneur_profile_id !== null;
+        });
+
+        if ($becameAvailable) {
+            $this->notifyEntrepreneurFollowers(
+                $listing->fresh(),
+                EntrepreneurUpdateNotification::TYPE_RESTOCKED
+            );
+        }
 
         return back()->with('status', 'La disponibilidad fue actualizada.');
     }
@@ -302,7 +351,11 @@ class ListingController extends Controller
             ->where('is_active', true)
             ->whereNotNull('published_at')
             ->whereHas('user', fn (Builder $query) => $query->whereNotNull('email_verified_at'))
-            ->whereHas('category', fn (Builder $query) => $query->where('is_active', true));
+            ->whereHas('category', fn (Builder $query) => $query->where('is_active', true))
+            ->where(function (Builder $query): void {
+                $query->whereNull('entrepreneur_profile_id')
+                    ->orWhereHas('entrepreneurProfile', fn (Builder $profile) => $profile->where('is_active', true));
+            });
     }
 
     private function listingRules(bool $allowZeroStock = false): array
@@ -311,6 +364,13 @@ class ListingController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:10000'],
             'category_id' => ['required', 'integer', Rule::exists('categories', 'id')->where('is_active', true)],
+            'entrepreneur_profile_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('entrepreneur_profiles', 'id')
+                    ->where('user_id', request()->user()->id)
+                    ->where('is_active', true),
+            ],
             'listing_type' => ['required', Rule::in(Listing::TYPES)],
             'price' => [
                 Rule::requiredIf(fn () => request()->input('listing_type') === Listing::TYPE_SALE),
@@ -331,6 +391,34 @@ class ListingController extends Controller
             'images' => ['sometimes', 'array', 'max:'.self::MAX_IMAGES],
             'images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
         ];
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, EntrepreneurProfile>
+     */
+    private function ownActiveProfiles()
+    {
+        return request()->user()->entrepreneurProfile()
+            ->where('is_active', true)
+            ->get();
+    }
+
+    private function notifyEntrepreneurFollowers(Listing $listing, string $eventType): void
+    {
+        $profile = EntrepreneurProfile::query()
+            ->whereKey($listing->entrepreneur_profile_id)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $profile) {
+            return;
+        }
+
+        $profile->followers()
+            ->whereKeyNot($profile->user_id)
+            ->each(fn (User $follower) => $follower->notify(
+                new EntrepreneurUpdateNotification($profile, $listing, $eventType)
+            ));
     }
 
     private function validateImageCount(int $count): void

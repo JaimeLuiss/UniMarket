@@ -8,6 +8,10 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Marketplace\ListingController;
+use App\Http\Controllers\Marketplace\FavoriteController;
+use App\Http\Controllers\Marketplace\EntrepreneurFollowController;
+use App\Http\Controllers\Marketplace\EntrepreneurProfileController;
+use App\Http\Controllers\Marketplace\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -42,6 +46,26 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/entrepreneurs/{slug}', [EntrepreneurProfileController::class, 'publicShow'])->name('entrepreneurs.show');
+    Route::get('/my-entrepreneur', [EntrepreneurProfileController::class, 'showOwn'])->name('my-entrepreneur');
+    Route::get('/my-entrepreneur/create', [EntrepreneurProfileController::class, 'create'])->name('my-entrepreneur.create');
+    Route::post('/my-entrepreneur', [EntrepreneurProfileController::class, 'store'])->name('my-entrepreneur.store');
+    Route::get('/my-entrepreneur/edit', [EntrepreneurProfileController::class, 'edit'])->name('my-entrepreneur.edit');
+    Route::put('/my-entrepreneur', [EntrepreneurProfileController::class, 'update'])->name('my-entrepreneur.update');
+    Route::patch('/my-entrepreneur/status', [EntrepreneurProfileController::class, 'updateStatus'])->name('my-entrepreneur.status');
+
+    Route::get('/my-favorites', [FavoriteController::class, 'index'])->name('my-favorites');
+    Route::post('/marketplace/{listing}/favorite', [FavoriteController::class, 'store'])->name('marketplace.favorite');
+    Route::delete('/marketplace/{listing}/favorite', [FavoriteController::class, 'destroy'])->name('marketplace.unfavorite');
+
+    Route::get('/entrepreneurs-following', [EntrepreneurFollowController::class, 'index'])->name('entrepreneurs.following');
+    Route::post('/entrepreneurs/{entrepreneurProfile}/follow', [EntrepreneurFollowController::class, 'store'])->name('entrepreneurs.follow');
+    Route::delete('/entrepreneurs/{entrepreneurProfile}/follow', [EntrepreneurFollowController::class, 'destroy'])->name('entrepreneurs.unfollow');
+
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+
     Route::get('/marketplace', [ListingController::class, 'index'])->name('marketplace.index');
     Route::get('/marketplace/create', [ListingController::class, 'create'])->name('marketplace.create');
     Route::post('/marketplace', [ListingController::class, 'store'])->name('marketplace.store');
